@@ -386,6 +386,7 @@ mxStackLayout.prototype.execute = function(parent)
 			var last = null;
 			var lastValue = 0;
 			var lastChild = null;
+			var max = null;
 			var cells = this.getLayoutCells(parent);
 			
 			for (var i = 0; i < cells.length; i++)
@@ -404,6 +405,14 @@ mxStackLayout.prototype.execute = function(parent)
 							(!horizontal && last.y + last.height +
 							geo.height + 2 * this.spacing > this.wrap))
 						{
+							if (!max ||
+								(horizontal ?
+									last.x + last.width > max.x + max.width :
+									last.y + last.height > max.y + max.height
+								))
+							{
+								max = last;
+							}
 							last = null;
 							
 							if (horizontal)
@@ -504,7 +513,7 @@ mxStackLayout.prototype.execute = function(parent)
 
 			if (this.resizeParent && pgeo != null && last != null && !this.graph.isCellCollapsed(parent))
 			{
-				this.updateParentGeometry(parent, pgeo, last);
+				this.updateParentGeometry(parent, pgeo, max || last, last);
 			}
 			else if (this.resizeLast && pgeo != null && last != null && lastChild != null)
 			{
@@ -554,7 +563,7 @@ mxStackLayout.prototype.setChildGeometry = function(child, geo)
  * Only children where <isVertexIgnored> returns false are taken into
  * account.
  */
-mxStackLayout.prototype.updateParentGeometry = function(parent, pgeo, last)
+mxStackLayout.prototype.updateParentGeometry = function(parent, pgeo, max, last)
 {
 	var horizontal = this.isHorizontal();
 	var model = this.graph.getModel();	
@@ -563,28 +572,34 @@ mxStackLayout.prototype.updateParentGeometry = function(parent, pgeo, last)
 	
 	if (horizontal)
 	{
-		var tmp = last.x + last.width + this.marginRight + this.border;
+		var tmp1 = max.x + max.width + this.marginRight + this.border;
+		var tmp2 = max === last ? pgeo2.height : last.y + last.height + this.marginBottom + this.border;
 		
 		if (this.resizeParentMax)
 		{
-			pgeo2.width = Math.max(pgeo2.width, tmp);
+			pgeo2.width = Math.max(pgeo2.width, tmp1);
+			pgeo2.height = Math.max(pgeo2.height, tmp2);
 		}
 		else
 		{
-			pgeo2.width = tmp;
+			pgeo2.width = tmp1;
+			pgeo2.height = tmp2;
 		}
 	}
 	else
 	{
-		var tmp = last.y + last.height + this.marginBottom + this.border;
+		var tmp1 = max.y + max.height + this.marginBottom + this.border;
+		var tmp2 = max === last ? pgeo2.width : last.x + last.width + this.marginRight + this.border;
 		
 		if (this.resizeParentMax)
 		{
-			pgeo2.height = Math.max(pgeo2.height, tmp);
+			pgeo2.height = Math.max(pgeo2.height, tmp1);
+			pgeo2.width = Math.max(pgeo2.width, tmp2);
 		}
 		else
 		{
-			pgeo2.height = tmp;
+			pgeo2.height = tmp1;
+			pgeo2.width = tmp2;
 		}
 	}
 	
